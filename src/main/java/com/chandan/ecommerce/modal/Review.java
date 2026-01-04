@@ -30,11 +30,9 @@ public class Review {
 
     @JsonIgnore
     @ManyToOne
-    @Column(name = "product_id", nullable = false)
     private Product product;
 
     @ManyToOne
-    @Column(name = "user_id", nullable = false)
     private User user;
 
     @Column(nullable = false)
