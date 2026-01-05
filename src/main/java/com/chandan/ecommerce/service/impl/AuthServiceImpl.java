@@ -10,6 +10,8 @@ import com.chandan.ecommerce.repository.UserRepository;
 import com.chandan.ecommerce.repository.VerificationCodeRepository;
 import com.chandan.ecommerce.response.SignupRequest;
 import com.chandan.ecommerce.service.AuthService;
+import com.chandan.ecommerce.service.EmailService;
+import com.chandan.ecommerce.utils.OtpUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -30,6 +32,36 @@ public class AuthServiceImpl implements AuthService {
     private final CartRepository cartRepository;
     private final JwtProvider jwtProvider;
     private final VerificationCodeRepository verificationCodeRepository;
+    private final EmailService emailService;
+
+    @Override
+    public void sentLoginOtp(String email) throws Exception {
+        String SIGNING_PREFIX="signin_";
+
+        if(email.startsWith(SIGNING_PREFIX)){
+            email=email.substring(SIGNING_PREFIX.length());
+
+            User user = userRepository.findByEmail(email);
+            if(user==null){
+                throw new Exception("user not exist with provided email");
+            }
+        }
+
+        VerificationCode isExist=verificationCodeRepository.findByEmail(email);
+
+        if(isExist!=null){
+            verificationCodeRepository.delete(isExist);
+        }
+
+        String otp= OtpUtil.generateOtp();
+
+        VerificationCode verificationCode=new VerificationCode();
+        verificationCode.setOtp(otp);
+        verificationCode.setEmail(email);
+        verificationCodeRepository.save(verificationCode);
+
+
+    }
 
     @Override
     public String createUser(SignupRequest req) throws Exception {
