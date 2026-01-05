@@ -1,9 +1,6 @@
 package com.chandan.ecommerce.modal;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
@@ -18,10 +15,14 @@ public class VerificationCode {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
-    private String name;
+    private String otp;
 
-    private String locality;
+    private String email;
 
-    private  String address;
+    @OneToOne
+    private User user;
+
+    @OneToOne
+    private Seller seller;
 
 }
