@@ -4,8 +4,10 @@ import com.chandan.ecommerce.config.JwtProvider;
 import com.chandan.ecommerce.domain.USER_ROLE;
 import com.chandan.ecommerce.modal.Cart;
 import com.chandan.ecommerce.modal.User;
+import com.chandan.ecommerce.modal.VerificationCode;
 import com.chandan.ecommerce.repository.CartRepository;
 import com.chandan.ecommerce.repository.UserRepository;
+import com.chandan.ecommerce.repository.VerificationCodeRepository;
 import com.chandan.ecommerce.response.SignupRequest;
 import com.chandan.ecommerce.service.AuthService;
 import lombok.RequiredArgsConstructor;
@@ -27,9 +29,17 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final CartRepository cartRepository;
     private final JwtProvider jwtProvider;
+    private final VerificationCodeRepository verificationCodeRepository;
 
     @Override
-    public String createUser(SignupRequest req){
+    public String createUser(SignupRequest req) throws Exception {
+
+        VerificationCode verificationCode = verificationCodeRepository.findByEmail(req.getEmail());
+
+        if(verificationCode==null || !verificationCode.getOtp().equals(req.getOtp())){
+            throw new Exception("wrong otp..");
+        }
+
         User user = userRepository.findByEmail(req.getEmail());
 
         if(user==null){
