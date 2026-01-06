@@ -1,7 +1,9 @@
 package com.chandan.ecommerce.controller;
 
 import com.chandan.ecommerce.domain.USER_ROLE;
+import com.chandan.ecommerce.modal.VerificationCode;
 import com.chandan.ecommerce.repository.UserRepository;
+import com.chandan.ecommerce.response.ApiResponse;
 import com.chandan.ecommerce.response.AuthResponse;
 import com.chandan.ecommerce.response.SignupRequest;
 import com.chandan.ecommerce.service.AuthService;
@@ -29,6 +31,18 @@ public class AuthController {
         res.setJwt(jwt);
         res.setMessage("register success");
         res.setRole(USER_ROLE.ROLE_CUSTOMER);
+
+        return ResponseEntity.ok(res);
+    }
+
+    @PostMapping("/sent/login-signup-otp")
+    public ResponseEntity<ApiResponse> sentOtpHandler(@RequestBody VerificationCode req) throws Exception {
+
+        authService.sentLoginOtp(req.getEmail());
+
+        ApiResponse res = new ApiResponse();
+
+        res.setMessage("otp sent successfully");
 
         return ResponseEntity.ok(res);
     }

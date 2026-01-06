@@ -60,6 +60,11 @@ public class AuthServiceImpl implements AuthService {
         verificationCode.setEmail(email);
         verificationCodeRepository.save(verificationCode);
 
+        String subject="My bazaar login/signup otp";
+        String text="your login/signup otp is - ";
+
+        emailService.sendVerificationOtpEmail(email, otp, subject, text);
+
 
     }
 
