@@ -47,7 +47,9 @@ public class SellerServiceImpl implements SellerService {
         newSeller.setMobile(seller.getMobile());
         newSeller.setBankDetails(seller.getBankDetails());
         newSeller.setBusinessDetails(seller.getBusinessDetails());
-        return seller;
+
+        Seller savedSeller = sellerRepository.save(newSeller);
+        return savedSeller;
     }
 
     @Override

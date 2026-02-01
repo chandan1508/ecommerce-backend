@@ -57,62 +57,68 @@ public class AuthServiceImpl implements AuthService {
                 }
             }
             else {
-
                 User user = userRepository.findByEmail(email);
                 if(user==null){
                     throw new Exception("user not exist with provided email");
                 }
             }
-
         }
 
-        VerificationCode isExist=verificationCodeRepository.findByEmail(email);
-
-        if(isExist!=null){
-            verificationCodeRepository.delete(isExist);
+        // Delete all previous OTPs for this email
+        List<VerificationCode> existingCodes = verificationCodeRepository.findAllByEmail(email);
+        if(!existingCodes.isEmpty()) {
+            verificationCodeRepository.deleteAll(existingCodes);
         }
 
-        String otp= OtpUtil.generateOtp();
+        // Generate and save new OTP
+        String otp = OtpUtil.generateOtp();
 
-        VerificationCode verificationCode=new VerificationCode();
+        VerificationCode verificationCode = new VerificationCode();
         verificationCode.setOtp(otp);
         verificationCode.setEmail(email);
         verificationCodeRepository.save(verificationCode);
 
-        String subject="My bazaar login/signup otp";
-        String text="your login/signup otp is - " + otp;
+        String subject = "My bazaar login/signup otp";
+        String text = "your login/signup otp is - " + otp;
 
         emailService.sendVerificationOtpEmail(email, otp, subject, text);
-
-
     }
 
     @Override
     public String createUser(SignupRequest req) throws Exception {
+        // Use findAllByEmail and get the latest one
+        List<VerificationCode> verificationCodes = verificationCodeRepository.findAllByEmail(req.getEmail());
 
-        VerificationCode verificationCode = verificationCodeRepository.findByEmail(req.getEmail());
+        if(verificationCodes.isEmpty()){
+            throw new Exception("Please request OTP first");
+        }
 
-        if(verificationCode==null || !verificationCode.getOtp().equals(req.getOtp())){
+        // Get the most recent verification code
+        VerificationCode verificationCode = verificationCodes.get(verificationCodes.size() - 1);
+
+        if(!verificationCode.getOtp().equals(req.getOtp())){
             throw new Exception("wrong otp..");
         }
 
         User user = userRepository.findByEmail(req.getEmail());
 
-        if(user==null){
-            User createdUser=new User();
+        if(user == null){
+            User createdUser = new User();
             createdUser.setEmail(req.getEmail());
             createdUser.setFullName(req.getFullName());
             createdUser.setRole(USER_ROLE.ROLE_CUSTOMER);
             createdUser.setMobile("8596455241");
             createdUser.setPassword(passwordEncoder.encode(req.getOtp()));
 
-            user=userRepository.save(createdUser);
+            user = userRepository.save(createdUser);
 
             Cart cart = new Cart();
             cart.setUser(user);
             cartRepository.save(cart);
-
         }
+
+        // Delete used OTP
+        verificationCodeRepository.delete(verificationCode);
 
         List<GrantedAuthority> authorities = new ArrayList<>();
         authorities.add(new SimpleGrantedAuthority(USER_ROLE.ROLE_CUSTOMER.toString()));
@@ -124,10 +130,10 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public AuthResponse signing(LoginRequest req) {
+    public AuthResponse signing(LoginRequest req) throws Exception {
         String username = req.getEmail();
         String otp = req.getOtp();
-        
+
         Authentication authentication = authenticate(username, otp);
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
@@ -137,26 +143,42 @@ public class AuthServiceImpl implements AuthService {
         authResponse.setJwt(token);
         authResponse.setMessage("Login success");
 
-        Collection<? extends GrantedAuthority> authorities=authentication.getAuthorities();
-        String roleName = authorities.isEmpty()?null:authorities.iterator().next().getAuthority();
+        Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
+        String roleName = authorities.isEmpty() ? null : authorities.iterator().next().getAuthority();
 
         authResponse.setRole(USER_ROLE.valueOf(roleName));
 
         return authResponse;
     }
 
-    private Authentication authenticate(String username, String otp) {
+    private Authentication authenticate(String username, String otp) throws Exception {
         UserDetails userDetails = customUserService.loadUserByUsername(username);
 
-        if(userDetails==null){
-            throw new BadCredentialsException(("invalid username or password"));
+        String SELLER_PREFIX = "seller_";
+        if(username.startsWith(SELLER_PREFIX)){
+            username = username.substring(SELLER_PREFIX.length());
         }
 
-        VerificationCode verificationCode=verificationCodeRepository.findByEmail(username);
-
-        if(verificationCode==null || !verificationCode.getOtp().equals(otp)){
-            throw new BadCredentialsException("wrong otp");
+        if(userDetails == null){
+            throw new BadCredentialsException("invalid username or password");
         }
+
+        // Use findAllByEmail and get the latest one
+        List<VerificationCode> verificationCodes = verificationCodeRepository.findAllByEmail(username);
+
+        if(verificationCodes.isEmpty()){
+            throw new Exception("Please request OTP first");
+        }
+
+        // Get the most recent verification code
+        VerificationCode verificationCode = verificationCodes.get(verificationCodes.size() - 1);
+
+        if(!verificationCode.getOtp().equals(otp)){
+            throw new Exception("wrong otp");
+        }
+
+        // Delete used OTP
+        verificationCodeRepository.delete(verificationCode);
 
         return new UsernamePasswordAuthenticationToken(
                 userDetails, null, userDetails.getAuthorities()
