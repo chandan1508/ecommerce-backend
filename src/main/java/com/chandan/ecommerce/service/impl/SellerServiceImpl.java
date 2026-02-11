@@ -3,6 +3,7 @@ package com.chandan.ecommerce.service.impl;
 import com.chandan.ecommerce.config.JwtProvider;
 import com.chandan.ecommerce.domain.AccountStatus;
 import com.chandan.ecommerce.domain.USER_ROLE;
+import com.chandan.ecommerce.exceptions.SellerException;
 import com.chandan.ecommerce.modal.Address;
 import com.chandan.ecommerce.modal.Seller;
 import com.chandan.ecommerce.repository.AddressRepository;
@@ -53,8 +54,8 @@ public class SellerServiceImpl implements SellerService {
     }
 
     @Override
-    public Seller getSellerById(Long id) throws Exception {
-        return sellerRepository.findById(id).orElseThrow(()->new Exception("seller not found with id" + id));
+    public Seller getSellerById(Long id) throws SellerException {
+        return sellerRepository.findById(id).orElseThrow(()->new SellerException("seller not found with id" + id));
 
     }
 

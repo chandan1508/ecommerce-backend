@@ -1,6 +1,7 @@
 package com.chandan.ecommerce.controller;
 
 import com.chandan.ecommerce.domain.AccountStatus;
+import com.chandan.ecommerce.exceptions.SellerException;
 import com.chandan.ecommerce.modal.Seller;
 import com.chandan.ecommerce.modal.VerificationCode;
 import com.chandan.ecommerce.repository.VerificationCodeRepository;
@@ -65,7 +66,6 @@ public class SellerController {
 
             String otp = OtpUtil.generateOtp();
 
-
         VerificationCode verificationCode=new VerificationCode();
         verificationCode.setOtp(otp);
         verificationCode.setEmail(seller.getEmail());
@@ -79,7 +79,7 @@ public class SellerController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Seller> getSellerById(@PathVariable Long id) throws Exception {
+    public ResponseEntity<Seller> getSellerById(@PathVariable Long id) throws SellerException {
             Seller seller=sellerService.getSellerById(id);
             return new ResponseEntity<>(seller, HttpStatus.OK);
     }
